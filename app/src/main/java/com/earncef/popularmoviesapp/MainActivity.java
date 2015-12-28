@@ -29,7 +29,7 @@ import com.squareup.picasso.Picasso;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private String url = "http://api.themoviedb.org/3/discover/movie?api_key=d54e4dec538ca7f4b9def82c0eae1d10&sort_by=";
+    private String url = "http://api.themoviedb.org/3/discover/movie?api_key=APIKEYHERE&sort_by=";
     private String thumbnailUrl = "http://image.tmdb.org/t/p/w185/";
     private String sortBy = "popularity.desc";
     private JSONObject movieData = null;
