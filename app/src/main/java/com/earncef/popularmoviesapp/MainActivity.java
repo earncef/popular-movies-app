@@ -177,9 +177,6 @@ public class MainActivity extends AppCompatActivity {
             con.setRequestMethod("GET");
             con.setRequestProperty("Accept", "application/json");
 
-            int responseCode = con.getResponseCode();
-            Log.d(TAG, "Sending 'GET' request to URL : " + url);
-
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
             StringBuilder sb = new StringBuilder();
 
