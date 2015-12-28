@@ -8,12 +8,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.util.Log;
 import android.content.Context;
+import android.content.Intent;
 import android.view.ViewGroup;
 import android.view.View;
 import android.widget.GridView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.LinearLayout.LayoutParams;
+import android.widget.AdapterView;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -31,13 +32,15 @@ public class MainActivity extends AppCompatActivity {
     private String url = "http://api.themoviedb.org/3/discover/movie?api_key=d54e4dec538ca7f4b9def82c0eae1d10&sort_by=";
     private String thumbnailUrl = "http://image.tmdb.org/t/p/w185/";
     private String sortBy = "popularity.desc";
-    private JSONArray movieData = new JSONArray();
+    private JSONObject movieData = null;
     public static String[] thumbnails = {};
     protected ImageAdapter imageAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        restoreInstanceState(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -45,21 +48,36 @@ public class MainActivity extends AppCompatActivity {
         imageAdapter = new ImageAdapter(this);
         GridView gridView = (GridView) findViewById(R.id.gridThumbnail);
         gridView.setAdapter(imageAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                openMovie(position);
+            }
+        });
+
+
+        if (null == movieData) {
+            new LoadMoviesTask().execute(url + sortBy);
+        }
     }
 
     @Override
-    protected void onStart()
-    {
-        super.onStart();
-
-        //Get the movie data
-        new LoadMoviesTask().execute(url + sortBy);
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString("sortBy", sortBy);
+        outState.putString("movieData", movieData.toString());
+        outState.putStringArray("thumbnails", thumbnails);
+        super.onSaveInstanceState(outState);
     }
 
-        @Override
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        restoreInstanceState(savedInstanceState);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+            getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
@@ -86,11 +104,42 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    protected void restoreInstanceState(Bundle savedInstanceState) {
+        try {
+            sortBy = savedInstanceState.getString("sortBy");
+            thumbnails = savedInstanceState.getStringArray("thumbnails");
+            movieData = new JSONObject(savedInstanceState.getString("movieData"));
+        } catch (Exception e) {
+        }
+    }
+
+    protected void openMovie(int position) {
+        JSONArray movies = new JSONArray();
+        try {
+            movies = movieData.getJSONArray("results");
+        } catch (Exception e) {
+        }
+
+        try {
+            JSONObject movie = movies.getJSONObject(position);
+            Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+            intent.putExtra("movie", movie.toString());
+            startActivity(intent);
+        } catch (Exception e) {
+        }
+    }
+
     protected void update() {
         List<String> tThumbnails = new ArrayList<>();
-        for (int i = 0, size = movieData.length(); i < size; i++) {
+        JSONArray movies = new JSONArray();
+        try {
+            movies = movieData.getJSONArray("results");
+        } catch (Exception e) {
+        }
+
+        for (int i = 0, size = movies.length(); i < size; i++) {
             try {
-                JSONObject movie = movieData.getJSONObject(i);
+                JSONObject movie = movies.getJSONObject(i);
                 tThumbnails.add(thumbnailUrl + movie.getString("poster_path"));
             } catch (Exception e) {
                 Log.d(TAG, "There was an error in accessing movie data.");
@@ -115,8 +164,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             try {
-                JSONObject obj = new JSONObject(result);
-                movieData = obj.getJSONArray("results");
+                movieData = new JSONObject(result);
                 update();
             } catch (Exception e) {
                 Log.d(TAG, "There was an error in parsing JSON response.");
@@ -184,6 +232,4 @@ public class MainActivity extends AppCompatActivity {
             return imageView;
         }
     }
-
-
 }
